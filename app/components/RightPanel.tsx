@@ -157,12 +157,12 @@ export default function RightPanel({ metrics, log, recommendation }: Props) {
         variant={metrics.networkHealthPct < 50 ? "danger" : metrics.networkHealthPct < 80 ? "warn" : "safe"}
       />
 
-      <div className="flex items-center gap-2 px-5 py-3 border-b border-border font-mono text-[10px] tracking-[2px] text-text-dim uppercase">
+      <div className="flex items-center gap-2 px-5 py-3 border-b border-border font-mono text-[10px] tracking-[2px] text-text-dim uppercase flex-shrink-0">
         <div className="w-1.5 h-1.5 rounded-full bg-accent" />
         Event Log
       </div>
 
-      <div ref={logRef} className="flex-1 overflow-y-auto p-3 min-h-0">
+      <div ref={logRef} className="overflow-y-auto p-3" style={{ height: "160px", minHeight: "160px", maxHeight: "160px" }}>
         {log.map((entry) => (
           <LogLine key={entry.id} entry={entry} startTs={startTs} />
         ))}
