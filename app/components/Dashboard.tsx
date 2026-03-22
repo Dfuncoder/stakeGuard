@@ -19,10 +19,12 @@ export default function Dashboard() {
 
   const sim = useSimulation(width, height);
 
-  // Merge on-chain risk score into metrics if live chain is connected
-  const mergedMetrics = chainState
-    ? { ...sim.metrics, riskScore: chainState.networkRiskScore }
-    : sim.metrics;
+  // Only use on-chain risk score if it's > 0 (real slash happened)
+  // Otherwise show the simulation score so the demo works correctly
+  const mergedMetrics =
+    chainState && chainState.networkRiskScore > 0
+      ? { ...sim.metrics, riskScore: chainState.networkRiskScore }
+      : sim.metrics;
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-bg text-text">
