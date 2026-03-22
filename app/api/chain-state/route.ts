@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// getNetworkSnapshot() selector = first 4 bytes of keccak256("getNetworkSnapshot()")
-// Computed: keccak256("getNetworkSnapshot()") = 0xf44383ac...
-const GET_NETWORK_SNAPSHOT_SELECTOR = "0xf44383ac";
+const GET_NETWORK_SNAPSHOT_SELECTOR = "0xa6931e6d";
 
 export async function GET(req: NextRequest) {
   const contractAddress = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS;

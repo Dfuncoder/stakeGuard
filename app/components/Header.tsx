@@ -42,7 +42,7 @@ export default function Header({ isLiveChain, contractAddress }: Props) {
         )}
 
         <a
-          href="https://github.com/your-org/stakeguard"
+          href="https://github.com/Dfuncoder/stakeGuard"
           target="_blank"
           rel="noopener noreferrer"
           className="font-mono text-[10px] tracking-[2px] text-text-dim uppercase hover:text-accent transition-colors"

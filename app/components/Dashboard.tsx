@@ -19,9 +19,9 @@ export default function Dashboard() {
   const sim = useSimulation(width, height);
 
   // Merge on-chain risk score into metrics if live chain is connected
-  const mergedMetrics = chainState
-    ? { ...sim.metrics, riskScore: chainState.networkRiskScore }
-    : sim.metrics;
+  const mergedMetrics = (chainState && chainState.networkRiskScore > 0)
+  ? { ...sim.metrics, riskScore: chainState.networkRiskScore }
+  : sim.metrics;
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-bg text-text">
