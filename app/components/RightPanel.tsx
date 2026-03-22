@@ -162,17 +162,37 @@ export default function RightPanel({ metrics, log, recommendation }: Props) {
         Event Log
       </div>
 
-      <div ref={logRef} className="flex-1 overflow-y-auto p-3">
+      <div ref={logRef} className="flex-1 overflow-y-auto p-3 min-h-0">
         {log.map((entry) => (
           <LogLine key={entry.id} entry={entry} startTs={startTs} />
         ))}
       </div>
 
-      <div className="p-4 border-t border-border bg-accent/5">
-        <div className="font-mono text-[9px] tracking-[2px] text-accent uppercase mb-2">
-          ⬡ Risk Recommendation
+      {/* Recommendation box — always visible, never hidden */}
+      <div
+        className="flex-shrink-0 border-t-2 border-accent"
+        style={{ background: "rgba(240,165,0,0.10)" }}
+      >
+        {/* Header bar */}
+        <div
+          className="flex items-center gap-2 px-4 py-2 border-b border-accent/30"
+          style={{ background: "rgba(240,165,0,0.15)" }}
+        >
+          <div className="w-2 h-2 rounded-full bg-accent flex-shrink-0" />
+          <span className="font-mono text-[10px] tracking-[2px] text-accent uppercase font-bold">
+            Risk Recommendation
+          </span>
         </div>
-        <p className="text-[11px] text-text-dim leading-relaxed">{recommendation}</p>
+
+        {/* Recommendation text */}
+        <div className="px-4 py-3">
+          <p
+            className="text-[12px] leading-relaxed font-sans"
+            style={{ color: "#e2e8f0" }}
+          >
+            {recommendation}
+          </p>
+        </div>
       </div>
     </div>
   );
