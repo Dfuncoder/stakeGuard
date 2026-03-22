@@ -9,6 +9,7 @@ import LeftPanel from "@/app/components/LeftPanel";
 import Toolbar from "@/app/components/Toolbar";
 import NetworkCanvas from "@/app/components/NetworkCanvas";
 import RightPanel from "@/app/components/RightPanel";
+import RecommendationBar from "@/app/components/RecommendationBar";
 import AttackModal from "@/app/components/AttackModal";
 
 export default function Dashboard() {
@@ -19,9 +20,9 @@ export default function Dashboard() {
   const sim = useSimulation(width, height);
 
   // Merge on-chain risk score into metrics if live chain is connected
-  const mergedMetrics = (chainState && chainState.networkRiskScore > 0)
-  ? { ...sim.metrics, riskScore: chainState.networkRiskScore }
-  : sim.metrics;
+  const mergedMetrics = chainState
+    ? { ...sim.metrics, riskScore: chainState.networkRiskScore }
+    : sim.metrics;
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-bg text-text">
@@ -78,10 +79,15 @@ export default function Dashboard() {
           <RightPanel
             metrics={mergedMetrics}
             log={sim.log}
-            recommendation={sim.recommendation}
           />
         </div>
       </div>
+
+      {/* Bottom recommendation bar — always visible across full width */}
+      <RecommendationBar
+        recommendation={sim.recommendation}
+        riskScore={mergedMetrics.riskScore}
+      />
 
       {modalOpen && (
         <AttackModal

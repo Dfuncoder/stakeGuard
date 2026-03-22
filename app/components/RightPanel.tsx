@@ -7,12 +7,10 @@ import type { LogEntry, NetworkMetrics } from "@/app/types";
 interface Props {
   metrics: NetworkMetrics;
   log: LogEntry[];
-  recommendation: string;
 }
 
 function RiskScore({ score }: { score: number }) {
-  const level =
-    score >= 60 ? "high" : score >= 30 ? "medium" : "low";
+  const level = score >= 60 ? "high" : score >= 30 ? "medium" : "low";
   const label =
     score >= 60
       ? "CRITICAL — Network Compromised"
@@ -21,7 +19,7 @@ function RiskScore({ score }: { score: number }) {
       : "NOMINAL — No Active Threat";
 
   return (
-    <div className="p-5 border-b border-border text-center">
+    <div className="p-5 border-b border-border text-center flex-shrink-0">
       <div className="font-mono text-[9px] tracking-[2px] text-text-dim uppercase mb-3">
         Network Risk Score
       </div>
@@ -36,13 +34,12 @@ function RiskScore({ score }: { score: number }) {
         {String(score).padStart(2, "0")}
       </div>
       <div className="font-mono text-[10px] text-text-dim mt-1.5">{label}</div>
-      <div className="mt-3 h-1.5 bg-border relative">
+      <div className="mt-3 h-1.5 bg-border">
         <div
           className="h-1.5 transition-all duration-700"
           style={{
             width: `${score}%`,
-            background: `linear-gradient(90deg, #00e676, #ff9800, #ff4444)`,
-            backgroundSize: "100px 100%",
+            background: "linear-gradient(90deg, #00e676, #ff9800, #ff4444)",
           }}
         />
       </div>
@@ -50,17 +47,19 @@ function RiskScore({ score }: { score: number }) {
   );
 }
 
-interface MetricRowProps {
+function MetricRow({
+  label,
+  value,
+  variant = "default",
+}: {
   label: string;
   value: string;
   variant?: "safe" | "warn" | "danger" | "default";
-}
-
-function MetricRow({ label, value, variant = "default" }: MetricRowProps) {
+}) {
   return (
     <div
       className={cn(
-        "flex items-center justify-between px-5 py-2.5 border-b border-border",
+        "flex items-center justify-between px-5 py-2.5 border-b border-border flex-shrink-0",
         variant === "danger" && "bg-danger/5"
       )}
     >
@@ -82,17 +81,16 @@ function MetricRow({ label, value, variant = "default" }: MetricRowProps) {
 
 const LEVEL_STYLES: Record<LogEntry["level"], string> = {
   danger: "border-danger text-[#ff8080]",
-  warn: "border-warn text-[#ffb74d]",
-  info: "border-accent text-[#ffd54f]",
-  safe: "border-safe text-[#69f0ae]",
-  neutral: "border-border text-text-dim",
+  warn:   "border-warn text-[#ffb74d]",
+  info:   "border-accent text-[#ffd54f]",
+  safe:   "border-safe text-[#69f0ae]",
+  neutral:"border-border text-text-dim",
 };
 
 function LogLine({ entry, startTs }: { entry: LogEntry; startTs: number }) {
   const elapsed = Math.max(0, entry.timestamp - startTs);
   const mm = String(Math.floor(elapsed / 60000)).padStart(2, "0");
   const ss = String(Math.floor((elapsed % 60000) / 1000)).padStart(2, "0");
-
   return (
     <div
       className={cn(
@@ -106,7 +104,7 @@ function LogLine({ entry, startTs }: { entry: LogEntry; startTs: number }) {
   );
 }
 
-export default function RightPanel({ metrics, log, recommendation }: Props) {
+export default function RightPanel({ metrics, log }: Props) {
   const logRef = useRef<HTMLDivElement>(null);
   const startTs = log[0]?.timestamp ?? 0;
 
@@ -117,7 +115,7 @@ export default function RightPanel({ metrics, log, recommendation }: Props) {
   }, [log]);
 
   return (
-    <div className="border-l border-border flex flex-col overflow-hidden">
+    <div className="border-l border-border flex flex-col overflow-hidden h-full">
       <RiskScore score={metrics.riskScore} />
 
       <MetricRow
@@ -133,13 +131,7 @@ export default function RightPanel({ metrics, log, recommendation }: Props) {
       <MetricRow
         label="Affected Validators"
         value={`${metrics.affectedValidators} / ${metrics.totalValidators}`}
-        variant={
-          metrics.affectedValidators >= 4
-            ? "danger"
-            : metrics.affectedValidators > 0
-            ? "warn"
-            : "default"
-        }
+        variant={metrics.affectedValidators >= 4 ? "danger" : metrics.affectedValidators > 0 ? "warn" : "default"}
       />
       <MetricRow
         label="Attacker Profit Est."
@@ -157,42 +149,16 @@ export default function RightPanel({ metrics, log, recommendation }: Props) {
         variant={metrics.networkHealthPct < 50 ? "danger" : metrics.networkHealthPct < 80 ? "warn" : "safe"}
       />
 
+      {/* Event Log — takes all remaining space */}
       <div className="flex items-center gap-2 px-5 py-3 border-b border-border font-mono text-[10px] tracking-[2px] text-text-dim uppercase flex-shrink-0">
         <div className="w-1.5 h-1.5 rounded-full bg-accent" />
         Event Log
       </div>
 
-      <div ref={logRef} className="overflow-y-auto p-3" style={{ height: "160px", minHeight: "160px", maxHeight: "160px" }}>
+      <div ref={logRef} className="flex-1 overflow-y-auto p-3 min-h-0">
         {log.map((entry) => (
           <LogLine key={entry.id} entry={entry} startTs={startTs} />
         ))}
-      </div>
-
-      {/* Recommendation box — always visible, never hidden */}
-      <div
-        className="flex-shrink-0 border-t-2 border-accent"
-        style={{ background: "rgba(240,165,0,0.10)" }}
-      >
-        {/* Header bar */}
-        <div
-          className="flex items-center gap-2 px-4 py-2 border-b border-accent/30"
-          style={{ background: "rgba(240,165,0,0.15)" }}
-        >
-          <div className="w-2 h-2 rounded-full bg-accent flex-shrink-0" />
-          <span className="font-mono text-[10px] tracking-[2px] text-accent uppercase font-bold">
-            Risk Recommendation
-          </span>
-        </div>
-
-        {/* Recommendation text */}
-        <div className="px-4 py-3">
-          <p
-            className="text-[12px] leading-relaxed font-sans"
-            style={{ color: "#e2e8f0" }}
-          >
-            {recommendation}
-          </p>
-        </div>
       </div>
     </div>
   );
