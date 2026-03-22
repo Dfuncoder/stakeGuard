@@ -234,7 +234,7 @@ LIVE badge now points to Sepolia.
 
 ## Research Foundation
 
-> **Elastic Restaking Networks** — Tas, Sankagiri, Tse, Xiang (Technion / Stanford, 2024)
+> **Elastic Restaking Networks** — (Roi Bar-Zur, PhD Student, Technion)
 
 | Paper Insight | Implementation |
 |---------------|---------------|
