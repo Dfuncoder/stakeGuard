@@ -2,9 +2,9 @@
 
 **Track:** DeFi, Security & Mechanism Design (IC3)
 **Sub-track:** Elastic Restaking Networks
-**Team:** [Your Name / Team Name]
-**Demo URL:** [your-vercel-url.vercel.app]
-**Contract (Sepolia):** [0x...]
+**Team:** Jude Mbakwe
+**Demo URL:** https://stake-guard.vercel.app
+**Contract (Sepolia):** `0xdFC60484EEa7f91ebeC689fDA8C15c137a492c2a`
 
 ---
 

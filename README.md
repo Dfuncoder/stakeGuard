@@ -6,7 +6,7 @@ Detects Byzantine AVS failures, executes elastic slashing, propagates cascade de
 
 > Implements *Elastic Restaking Networks* (Tas, Sankagiri, Tse, Xiang — Technion / Stanford, 2024)
 
-**Live Demo:** [your-vercel-url.vercel.app]
+**Live Demo:** https://stake-guard.vercel.app
 **Contract (Sepolia):** `0xdFC60484EEa7f91ebeC689fDA8C15c137a492c2a`
 
 ---
