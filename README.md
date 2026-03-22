@@ -1,262 +1,151 @@
 # ⬡ StakeGuard
 
-**Restaking Attack Surface Visualizer** — a DeFi security tool that models Byzantine AVS failures, cascading slashing events, and correlated stake exposure across EigenLayer-style restaking networks.
+**Restaking Attack Surface Visualizer** — an on-chain risk registry and simulation dashboard that detects Byzantine AVS failures, executes elastic slashing, and warns operators before cascading losses destroy a restaking network.
 
-> Built for DeFi security hackathons. Grounded in peer-reviewed research on Elastic Restaking Networks.
+> Built for the IC3 DeFi, Security & Mechanism Design Hackathon.
+> Directly implements insights from *Elastic Restaking Networks* (Technion / Stanford, 2024).
 
 ---
 
 ## The Problem
 
-Restaking protocols like EigenLayer allow validators to secure multiple Actively Validated Services (AVSs) with the same stake. This is capital-efficient — but creates a hidden systemic risk:
+EigenLayer and Symbiotic let validators secure multiple AVS services with the same stake. This is capital-efficient — but one Byzantine service can cascade slashing across every validator that shared stake with it, weakening every other service those validators secured.
 
-**A single Byzantine (malicious or buggy) AVS can trigger cascading slashing across every validator that shared stake with it — weakening the security of every other service those validators secured.**
-
-The academic proof (from *Elastic Restaking Networks*, Technion 2024) shows:
-- Finding the most profitable attack across a restaking network is **NP-complete** in general
-- Even one Byzantine service can slash shared stake and **degrade the entire ecosystem**
-- Validators need decision-support tooling, not just theory
-
-Yet today, **no operator tooling exists** to visualize or simulate these cascades before they happen.
-
-StakeGuard fills that gap.
+**No tooling exists** to make this risk observable or enforceable. StakeGuard fixes that.
 
 ---
 
 ## What It Does
 
-StakeGuard is a **live attack simulator** with three core capabilities:
+### On-Chain — `RestakingGuard.sol`
+- Maintains a live registry of validators, AVS services, and stake allocations
+- Flags Byzantine services and executes proportional elastic slashing
+- Automatically detects cascade risk (≥50% threshold) and emits `CascadeRiskDetected`
+- Publishes a live risk score (0–99) on-chain after every slash incident
 
-### 1. Network Visualization
-Renders a real-time graph of validators (outer ring) and AVS services (inner ring), with edges representing stake allocations. Hover any node to see stake, health, services, and status.
-
-### 2. Byzantine Failure Injection
-Select any AVS to mark as Byzantine. The simulator propagates:
-- **Phase 1** — Flags exposed validators as at-risk
-- **Phase 2** — Slashes 30% of stake from all allocated validators
-- **Phase 3** — Detects cascade: identifies other services weakened by shared-validator slashing; flags secondary validators
-
-### 3. Risk Scoring & Recommendations
-After each simulation:
-- Live 0–100 risk score with color-coded severity
-- Per-metric breakdown (stake lost, cascade depth, affected validators, attacker profit estimate)
-- Timestamped event log narrating each phase
-- Actionable recommendation: specific allocation changes to reduce blast radius
+### Off-Chain — Next.js Dashboard
+- Renders the restaking network as a live graph
+- Simulates any Byzantine attack step-by-step with a 4-phase engine
+- Reads live contract state when deployed (shows LIVE badge)
+- Outputs risk score, event log, and allocation recommendations
 
 ---
 
-## Architecture
+## Project Structure
 
 ```
 stakeguard/
-├── app/
-│   ├── api/
-│   │   └── simulate/
-│   │       └── route.ts          # POST /api/simulate — pure simulation engine
+├── app/                              # Next.js 14 (App Router) — TypeScript
+│   ├── api/simulate/route.ts         # POST /api/simulate — server-side engine
 │   ├── components/
-│   │   ├── Header.tsx            # Top bar with logo and badges
-│   │   ├── Dashboard.tsx         # Root layout orchestrator (client)
-│   │   ├── LeftPanel.tsx         # Validator cards + AVS list + action buttons
-│   │   ├── NetworkCanvas.tsx     # Canvas renderer — nodes, edges, tooltips
-│   │   ├── Toolbar.tsx           # Run/Pause/Step controls + status indicator
-│   │   ├── RightPanel.tsx        # Risk score, metrics, event log, recommendation
-│   │   └── AttackModal.tsx       # AVS selection modal
+│   │   ├── Dashboard.tsx             # Root layout orchestrator
+│   │   ├── NetworkCanvas.tsx         # Canvas 2D graph renderer
+│   │   ├── LeftPanel.tsx             # Validator cards + AVS list
+│   │   ├── RightPanel.tsx            # Risk score, metrics, event log
+│   │   ├── Toolbar.tsx               # Run / Pause / Step controls
+│   │   ├── AttackModal.tsx           # Byzantine AVS selector
+│   │   └── Header.tsx                # Logo + live chain badge
 │   ├── hooks/
-│   │   ├── useSimulation.ts      # Central state machine + API integration
-│   │   └── useCanvasSize.ts      # ResizeObserver for responsive canvas
+│   │   ├── useSimulation.ts          # Central state machine
+│   │   ├── useContractState.ts       # Live on-chain polling
+│   │   └── useCanvasSize.ts          # Responsive canvas
 │   ├── lib/
-│   │   ├── data.ts               # Seed data: validators and AVS services
-│   │   ├── simulation.ts         # Pure simulation engine (also used server-side)
-│   │   ├── canvas.ts             # Layout and hit-testing utilities
-│   │   └── utils.ts              # cn() helper
-│   ├── types/
-│   │   └── index.ts              # All shared TypeScript interfaces
-│   ├── globals.css               # Tailwind base + custom scrollbar
-│   ├── layout.tsx                # Root layout, fonts, metadata
-│   └── page.tsx                  # Entry point → Dashboard
-├── public/
-├── .env.example
-├── .gitignore
-├── next.config.js
-├── package.json
-├── postcss.config.js
-├── tailwind.config.ts
-└── tsconfig.json
+│   │   ├── simulation.ts             # Pure simulation engine
+│   │   ├── data.ts                   # Seed network data
+│   │   ├── canvas.ts                 # Layout + hit-test utilities
+│   │   └── utils.ts                  # cn() helper
+│   └── types/index.ts                # All TypeScript types
+│
+└── contracts/                        # Hardhat — TypeScript
+    ├── contracts/
+    │   ├── RestakingGuard.sol        # Main contract (270 lines)
+    │   └── IRestakingGuard.sol       # Interface
+    ├── test/
+    │   └── RestakingGuard.test.ts    # 36 tests, 10 suites
+    └── scripts/
+        └── deploy.ts                 # Seeds network + writes app/lib/contract.ts
 ```
 
-### Key Design Decisions
+---
 
-| Decision | Rationale |
-|----------|-----------|
-| **Next.js 14 App Router** | API routes for server-side simulation engine, easy Vercel deploy |
-| **TypeScript strict mode** | All domain types are explicit; no `any` in simulation logic |
-| **Canvas 2D API** | No graph library dependency; full control over rendering and animation |
-| **Simulation runs server-side** | `/api/simulate` is a pure function — easily unit-testable and swappable for a heavier solver |
-| **ResizeObserver hook** | Canvas is fully responsive; layout recalculates on window resize |
-| **Step-by-step playback** | Judges and operators can pause at each phase to understand what happened |
+## Quick Start
+
+```bash
+unzip stakeguard.zip && cd stakeguard
+
+# Frontend (simulation mode — no contract needed)
+npm install
+npm run dev
+# Open http://localhost:3000
+
+# Contracts
+cd contracts && npm install
+npx hardhat test          # run 36 tests
+npx hardhat node          # start local blockchain
+npm run deploy:local      # deploy + seed network
+```
+
+### Enable Live Chain Mode
+
+After deploying, add to `.env.local`:
+```
+NEXT_PUBLIC_CONTRACT_ADDRESS=0xYourAddress
+NEXT_PUBLIC_RPC_URL=http://127.0.0.1:8545
+```
+Restart `npm run dev` — the header will show a green LIVE badge.
+
+### Deploy to Sepolia
+
+```bash
+cd contracts
+cp .env.example .env
+# Fill in DEPLOYER_PRIVATE_KEY, SEPOLIA_RPC_URL, ETHERSCAN_API_KEY
+npm run deploy:sepolia
+npx hardhat verify --network sepolia <CONTRACT_ADDRESS>
+```
 
 ---
 
 ## Tech Stack
 
 | Layer | Technology |
-|-------|-----------|
-| Framework | Next.js 14 (App Router) |
-| Language | TypeScript 5 (strict) |
-| Styling | Tailwind CSS v3 |
+|---|---|
+| Frontend | Next.js 14, TypeScript 5, Tailwind CSS |
 | Rendering | Canvas 2D API |
-| Fonts | Syne (display) + Space Mono (data) |
-| Animation | CSS keyframes + Tailwind |
-| API | Next.js Route Handlers |
-| Deploy | Vercel (zero config) |
+| Smart Contracts | Solidity 0.8.24 |
+| Contract Tooling | Hardhat, ethers v6, TypeChain |
+| Testing | Mocha, Chai, Hardhat Network Helpers |
+| Fonts | Syne + Space Mono |
+| Deploy | Vercel (frontend) + Sepolia (contracts) |
 
 ---
 
-## Getting Started
+## Contract Events Reference
 
-### Prerequisites
-- Node.js 18+
-- npm / yarn / pnpm
+```solidity
+// Emitted for each validator slashed in an incident
+ValidatorSlashed(validatorId, byzantineAvsId, slashedAmount, remaining, timestamp)
 
-### Install & Run
+// Emitted when a secondary service loses ≥50% of its validators
+CascadeRiskDetected(secondaryAvsId, slashedCount, totalCount, riskBps, timestamp)
 
-```bash
-# 1. Clone the repo
-git clone https://github.com/your-org/stakeguard.git
-cd stakeguard
-
-# 2. Install dependencies
-npm install
-
-# 3. Copy env file (no keys required for MVP)
-cp .env.example .env.local
-
-# 4. Start dev server
-npm run dev
+// Emitted after every slash — updated risk score
+RiskScoreUpdated(newScore, totalSlashedStake, totalNetworkStake, timestamp)
 ```
-
-Open [http://localhost:3000](http://localhost:3000).
-
-### Build for Production
-
-```bash
-npm run build
-npm start
-```
-
-### Deploy to Vercel
-
-```bash
-npx vercel --prod
-```
-
-No environment variables required for the MVP.
-
----
-
-## How to Demo (Hackathon Walkthrough)
-
-**Step 1 — Show the network**
-The dashboard loads with 6 validators and 5 real AVS services (EigenDA, Lagrange, Omni Network, AltLayer, Witness Chain). Point out the allocation graph and mean restaking degree.
-
-**Step 2 — Inject a high-connectivity attack**
-Click **⚡ Inject Byzantine Failure** → select **EigenDA** (most validators). Press **▶ Run Simulation**.
-
-Watch:
-- Phase 1: V1, V2, V5 flagged at-risk (yellow)
-- Phase 2: 30% slashed from each (red, health arcs shrink)
-- Phase 3: Lagrange and AltLayer degraded via cascade; V3, V4 flagged secondary risk
-- Risk score jumps to CRITICAL (60+)
-
-**Step 3 — Compare with low-connectivity attack**
-Click **↺ Reset** → attack **Witness Chain** (only V3, V6). Run again. Risk score stays LOW. This demonstrates the paper's core thesis: *degree matters*.
-
-**Step 4 — Point to the recommendation**
-The right panel outputs a specific allocation fix. This is what operators need.
-
----
-
-## Simulation Model
-
-The simulation engine (`app/lib/simulation.ts`) runs four phases:
-
-```
-Phase 0  — Target locked, initial metrics computed
-Phase 1  — Byzantine AVS flagged; exposed validators marked at_risk
-Phase 2  — Slashing: slash_pct × stake removed from each exposed validator
-Phase 3  — Cascade: identify secondary services and validators weakened
-Phase 4  — Final assessment: risk score, attacker profit, recommendation
-```
-
-### Risk Score Formula
-
-```
-riskScore = (affectedValidators / totalValidators) × 50
-          + (totalSlashedStake / totalStake)       × 50
-```
-
-Capped at 99. Drives the color coding:
-- `0–29` → NOMINAL (green)
-- `30–59` → MEDIUM RISK (orange)
-- `60–99` → CRITICAL (red)
-
-### Attacker Profit Estimate
-
-```
-attackerProfit ≈ totalSlashedStake × 0.05
-```
-
-Conservative estimate based on secondary market impact of slashed ETH.
-
----
-
-## Roadmap (Post-Hackathon)
-
-### v0.2 — Custom Network Editor
-- Drag-and-drop validator and AVS node creation
-- Editable stake amounts and service allocations
-- Export/import network topology as JSON
-
-### v0.3 — On-Chain Data Integration
-- Fetch real EigenLayer operator allocations via subgraph
-- Live restaking degree monitoring with alerting
-- Historical slash event replay
-
-### v0.4 — MIP Solver Backend
-- NP-hard attack search approximation (based on paper's MIP formulation)
-- Optimal allocation recommendations using OR-Tools
-- "Safe region" visualization for validator configurations
-
-### v0.5 — Monitoring Mode
-- Webhook alerts when restaking degree exceeds threshold
-- Telegram/Discord bot integration
-- Operator dashboard with persistent risk history
 
 ---
 
 ## Research Foundation
 
-This tool is directly inspired by:
+> **Elastic Restaking Networks** — Tas, Sankagiri, Tse, Xiang (Technion / Stanford, 2024)
 
-> **Elastic Restaking Networks** — Ertem Nusret Tas, Suryanarayana Sankagiri, David Tse, Zhuolun Xiang (Technion / Stanford, 2024)
-
-Key insights applied:
-1. Correlated validator exposure creates systemic, not isolated, risk (§3.2–3.4)
-2. Attack profitability search is NP-complete — operators need approximation tooling (§4)
-3. Elastic stake stretching after slashing weakens remaining security guarantees (§3)
-4. Mean restaking degree is a practical proxy for network-wide robustness (§5)
-
----
-
-## Contributing
-
-Pull requests welcome. Please open an issue first to discuss major changes.
-
-```bash
-npm run type-check   # TypeScript validation
-npm run lint         # ESLint
-npm run build        # Production build check
-```
+| Paper Insight | Where Implemented |
+|---|---|
+| Byzantine AVS cascades slashing (§3.2) | `executeSlashing()` → cascade loop |
+| Security threshold per service (§3.3) | `CASCADE_THRESHOLD_BPS = 5000` (50%) |
+| Elastic stake stretching (§3.4) | `slashedStake` tracked separately; health arc on canvas |
+| Attack profitability estimation (§4) | `attackerProfitEstimate = slashed × 0.05` |
+| Restaking degree as robustness proxy (§5) | Live metric; drives recommendations |
 
 ---
 

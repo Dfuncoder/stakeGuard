@@ -1,0 +1,146 @@
+import { ethers, network } from "hardhat";
+import * as fs from "fs";
+import * as path from "path";
+
+// ── Seed data matching the frontend exactly ────────────────────────────────────
+
+const toId = (s: string) => ethers.keccak256(ethers.toUtf8Bytes(s));
+
+const VALIDATORS = [
+  { id: toId("V1"), name: "Validator Alpha",   stakeEth: 4800 },
+  { id: toId("V2"), name: "Validator Beta",    stakeEth: 3200 },
+  { id: toId("V3"), name: "Validator Gamma",   stakeEth: 2900 },
+  { id: toId("V4"), name: "Validator Delta",   stakeEth: 1800 },
+  { id: toId("V5"), name: "Validator Epsilon", stakeEth: 3600 },
+  { id: toId("V6"), name: "Validator Zeta",    stakeEth: 1400 },
+];
+
+const AVS_SERVICES = [
+  { id: toId("AVS-A"), name: "EigenDA",       tvlEth: 8500 },
+  { id: toId("AVS-B"), name: "Lagrange",      tvlEth: 6200 },
+  { id: toId("AVS-C"), name: "Omni Network",  tvlEth: 5100 },
+  { id: toId("AVS-D"), name: "AltLayer",      tvlEth: 4300 },
+  { id: toId("AVS-E"), name: "Witness Chain", tvlEth: 3900 },
+];
+
+// Allocation map — mirrors frontend data.ts
+const ALLOCATIONS: Array<[string, string]> = [
+  ["V1", "AVS-A"], ["V1", "AVS-B"], ["V1", "AVS-C"],
+  ["V2", "AVS-A"], ["V2", "AVS-D"],
+  ["V3", "AVS-B"], ["V3", "AVS-C"],
+  ["V4", "AVS-C"], ["V4", "AVS-D"],
+  ["V5", "AVS-A"], ["V5", "AVS-B"], ["V5", "AVS-D"], ["V5", "AVS-E"],
+  ["V6", "AVS-E"],
+];
+
+async function main() {
+  const [deployer] = await ethers.getSigners();
+  const chainId = (await ethers.provider.getNetwork()).chainId;
+
+  console.log("\n══════════════════════════════════════════════");
+  console.log("  StakeGuard — RestakingGuard Deployment");
+  console.log("══════════════════════════════════════════════");
+  console.log(`  Network  : ${network.name} (chainId: ${chainId})`);
+  console.log(`  Deployer : ${deployer.address}`);
+  console.log(`  Balance  : ${ethers.formatEther(await ethers.provider.getBalance(deployer.address))} ETH`);
+  console.log("══════════════════════════════════════════════\n");
+
+  // ── Deploy ──────────────────────────────────────────────────────────────────
+  console.log("Deploying RestakingGuard...");
+  const Factory = await ethers.getContractFactory("RestakingGuard");
+  const guard = await Factory.deploy();
+  await guard.waitForDeployment();
+  const contractAddress = await guard.getAddress();
+  console.log(`✓ Deployed at: ${contractAddress}\n`);
+
+  // ── Register Validators ─────────────────────────────────────────────────────
+  console.log("Registering validators...");
+  for (const v of VALIDATORS) {
+    const tx = await guard.registerValidator(v.id, ethers.parseEther(v.stakeEth.toString()));
+    await tx.wait();
+    console.log(`  ✓ ${v.name} (${v.stakeEth} ETH)`);
+  }
+
+  // ── Register AVS Services ───────────────────────────────────────────────────
+  console.log("\nRegistering AVS services...");
+  for (const a of AVS_SERVICES) {
+    const tx = await guard.registerAVS(a.id, a.name, ethers.parseEther(a.tvlEth.toString()));
+    await tx.wait();
+    console.log(`  ✓ ${a.name} (${a.tvlEth} ETH TVL)`);
+  }
+
+  // ── Set up allocations ──────────────────────────────────────────────────────
+  console.log("\nSetting up validator allocations...");
+  for (const [vKey, aKey] of ALLOCATIONS) {
+    const tx = await guard.allocateValidator(toId(vKey), toId(aKey));
+    await tx.wait();
+    process.stdout.write(".");
+  }
+  console.log(` ✓ ${ALLOCATIONS.length} allocations set\n`);
+
+  // ── Verify network state ─────────────────────────────────────────────────────
+  const [totalStake, totalSlashed, score, vCount, aCount] =
+    await guard.getNetworkSnapshot();
+
+  console.log("Network snapshot:");
+  console.log(`  Total stake     : ${ethers.formatEther(totalStake)} ETH`);
+  console.log(`  Total slashed   : ${ethers.formatEther(totalSlashed)} ETH`);
+  console.log(`  Risk score      : ${score}/100`);
+  console.log(`  Validators      : ${vCount}`);
+  console.log(`  AVS services    : ${aCount}`);
+
+  // ── Write deployment output ──────────────────────────────────────────────────
+  const deploymentInfo = {
+    network: network.name,
+    chainId: chainId.toString(),
+    contractAddress,
+    deployer: deployer.address,
+    deployedAt: new Date().toISOString(),
+    validators: VALIDATORS.map(v => ({ ...v, id: v.id })),
+    avsServices: AVS_SERVICES,
+    allocations: ALLOCATIONS,
+  };
+
+  // Save to contracts/deployments/
+  const deploymentsDir = path.join(__dirname, "..", "deployments");
+  if (!fs.existsSync(deploymentsDir)) fs.mkdirSync(deploymentsDir, { recursive: true });
+  const outPath = path.join(deploymentsDir, `${network.name}.json`);
+  fs.writeFileSync(outPath, JSON.stringify(deploymentInfo, null, 2));
+  console.log(`\n✓ Deployment info saved to deployments/${network.name}.json`);
+
+  // Also write to frontend for easy integration
+  const frontendPath = path.join(__dirname, "..", "..", "app", "lib", "contract.ts");
+  const contractTs = `// Auto-generated by deploy script — do not edit manually
+// Network: ${network.name} | Deployed: ${new Date().toISOString()}
+
+export const CONTRACT_ADDRESS = "${contractAddress}" as const;
+export const CHAIN_ID = ${chainId};
+export const NETWORK = "${network.name}";
+
+// Validator IDs (keccak256 of name string, matching on-chain registration)
+export const VALIDATOR_IDS = {
+${VALIDATORS.map(v => `  "${v.name.split(" ")[1]}": "${v.id}" as const,`).join("\n")}
+} as const;
+
+// AVS IDs
+export const AVS_IDS = {
+${AVS_SERVICES.map(a => `  "${a.name}": "${a.id}" as const,`).join("\n")}
+} as const;
+`;
+  fs.writeFileSync(frontendPath, contractTs);
+  console.log("✓ Contract addresses exported to app/lib/contract.ts");
+
+  console.log("\n══════════════════════════════════════════════");
+  console.log("  Deployment Complete!");
+  if (network.name === "sepolia") {
+    console.log(`  Etherscan: https://sepolia.etherscan.io/address/${contractAddress}`);
+    console.log(`\n  To verify:`);
+    console.log(`  npx hardhat verify --network sepolia ${contractAddress}`);
+  }
+  console.log("══════════════════════════════════════════════\n");
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

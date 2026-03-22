@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useSimulation } from "@/app/hooks/useSimulation";
 import { useCanvasSize } from "@/app/hooks/useCanvasSize";
+import { useContractState } from "@/app/hooks/useContractState";
 import Header from "@/app/components/Header";
 import LeftPanel from "@/app/components/LeftPanel";
 import Toolbar from "@/app/components/Toolbar";
@@ -13,8 +14,14 @@ import AttackModal from "@/app/components/AttackModal";
 export default function Dashboard() {
   const [modalOpen, setModalOpen] = useState(false);
   const { containerRef, width, height } = useCanvasSize();
+  const { chainState, isConfigured } = useContractState();
 
   const sim = useSimulation(width, height);
+
+  // Merge on-chain risk score into metrics if live chain is connected
+  const mergedMetrics = chainState
+    ? { ...sim.metrics, riskScore: chainState.networkRiskScore }
+    : sim.metrics;
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-bg text-text">
@@ -28,10 +35,13 @@ export default function Dashboard() {
         }}
       />
 
-      <Header />
+      <Header
+        isLiveChain={isConfigured && !!chainState}
+        contractAddress={chainState?.contractAddress}
+      />
 
       <div className="flex flex-1 overflow-hidden relative z-10">
-        {/* Left panel — fixed width */}
+        {/* Left panel */}
         <div className="w-[300px] flex-shrink-0 overflow-hidden flex flex-col">
           <LeftPanel
             validators={sim.validators}
@@ -63,10 +73,10 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Right panel — fixed width */}
+        {/* Right panel */}
         <div className="w-[280px] flex-shrink-0 overflow-hidden flex flex-col">
           <RightPanel
-            metrics={sim.metrics}
+            metrics={mergedMetrics}
             log={sim.log}
             recommendation={sim.recommendation}
           />

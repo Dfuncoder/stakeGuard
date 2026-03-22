@@ -1,0 +1,124 @@
+{
+  "network": "localhost",
+  "chainId": "31337",
+  "contractAddress": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+  "deployer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  "deployedAt": "2026-03-22T09:53:03.759Z",
+  "validators": [
+    {
+      "id": "0x4c23426613a5dc69e08fbd2787e6210aa679d4522e95a89d4dd88c4fd13a2283",
+      "name": "Validator Alpha",
+      "stakeEth": 4800
+    },
+    {
+      "id": "0x23d235efaf569b2b407d10f447247743508d1762a8e3a3aed85ccc0570dde35f",
+      "name": "Validator Beta",
+      "stakeEth": 3200
+    },
+    {
+      "id": "0x4ade54ca82b345967b61d43a7b6e1c256d140cceb65202e7117104371c17959c",
+      "name": "Validator Gamma",
+      "stakeEth": 2900
+    },
+    {
+      "id": "0x936a052e832d05db833c1fb152ee9d04cb963f54db694a4cc58e037932bdbf61",
+      "name": "Validator Delta",
+      "stakeEth": 1800
+    },
+    {
+      "id": "0x81685035bf6e9d5f45bbedb20e2e5ca3f52663efad8040454930d989b0bd1f49",
+      "name": "Validator Epsilon",
+      "stakeEth": 3600
+    },
+    {
+      "id": "0xc1f3458591aa5dbadd866836ff54b5edb079a2e1de0432c95a85f45437b12bfe",
+      "name": "Validator Zeta",
+      "stakeEth": 1400
+    }
+  ],
+  "avsServices": [
+    {
+      "id": "0xaaf21b8fe9604d106ac0fca70c8d0c3456560fb48834a2a5677dcfad64e8a95e",
+      "name": "EigenDA",
+      "tvlEth": 8500
+    },
+    {
+      "id": "0x5821ef190e50e888edaecb19c2dde89a0f48b76e045d5abd44c63c9739f5d656",
+      "name": "Lagrange",
+      "tvlEth": 6200
+    },
+    {
+      "id": "0xf140ed84d0729d5c230cf4f38eb6a6ec655df75f3cb12314dc78e9cb76c4ed66",
+      "name": "Omni Network",
+      "tvlEth": 5100
+    },
+    {
+      "id": "0x15751b7a63c0d5f75a75e06d8c836dd9d710facd29b7acb0a22b6c58cbc45e3f",
+      "name": "AltLayer",
+      "tvlEth": 4300
+    },
+    {
+      "id": "0x514536057e51d838269a79c5f45cedb3152aa2faaebe19add1c49184731cfa3d",
+      "name": "Witness Chain",
+      "tvlEth": 3900
+    }
+  ],
+  "allocations": [
+    [
+      "V1",
+      "AVS-A"
+    ],
+    [
+      "V1",
+      "AVS-B"
+    ],
+    [
+      "V1",
+      "AVS-C"
+    ],
+    [
+      "V2",
+      "AVS-A"
+    ],
+    [
+      "V2",
+      "AVS-D"
+    ],
+    [
+      "V3",
+      "AVS-B"
+    ],
+    [
+      "V3",
+      "AVS-C"
+    ],
+    [
+      "V4",
+      "AVS-C"
+    ],
+    [
+      "V4",
+      "AVS-D"
+    ],
+    [
+      "V5",
+      "AVS-A"
+    ],
+    [
+      "V5",
+      "AVS-B"
+    ],
+    [
+      "V5",
+      "AVS-D"
+    ],
+    [
+      "V5",
+      "AVS-E"
+    ],
+    [
+      "V6",
+      "AVS-E"
+    ]
+  ]
+}

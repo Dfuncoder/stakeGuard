@@ -1,5 +1,5 @@
 {
-  "name": "stakeguard",
+  "name": "stakeguard-monorepo",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -7,7 +7,12 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "contracts:compile": "cd contracts && npm run compile",
+    "contracts:test": "cd contracts && npm run test",
+    "contracts:node": "cd contracts && npx hardhat node",
+    "contracts:deploy:local": "cd contracts && npm run deploy:local",
+    "contracts:deploy:sepolia": "cd contracts && npm run deploy:sepolia"
   },
   "dependencies": {
     "next": "14.2.5",
